@@ -1,0 +1,215 @@
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import { mockSOSReports } from "@/lib/mock-data"
+import { MapPin, Clock, User, AlertTriangle, Eye } from "lucide-react"
+
+export function DashboardOverview() {
+  // Get active reports (pending and in-progress)
+  const activeReports = mockSOSReports.filter(
+    (report) => report.status === "pending" || report.status === "in-progress",
+  )
+
+  const getPriorityColor = (priority: string) => {
+    switch (priority) {
+      case "critical":
+        return "bg-red-600 text-white"
+      case "high":
+        return "bg-orange-500 text-white"
+      case "medium":
+        return "bg-yellow-500 text-black"
+      case "low":
+        return "bg-green-500 text-white"
+      default:
+        return "bg-gray-500 text-white"
+    }
+  }
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case "pending":
+        return "bg-red-100 text-red-800 border-red-200"
+      case "in-progress":
+        return "bg-blue-100 text-blue-800 border-blue-200"
+      case "resolved":
+        return "bg-green-100 text-green-800 border-green-200"
+      case "false-alarm":
+        return "bg-gray-100 text-gray-800 border-gray-200"
+      default:
+        return "bg-gray-100 text-gray-800 border-gray-200"
+    }
+  }
+
+  const formatTime = (date: Date) => {
+    const now = new Date()
+    const diffInMinutes = Math.floor((now.getTime() - date.getTime()) / (1000 * 60))
+
+    if (diffInMinutes < 60) {
+      return `${diffInMinutes}m ago`
+    } else if (diffInMinutes < 1440) {
+      return `${Math.floor(diffInMinutes / 60)}h ago`
+    } else {
+      return `${Math.floor(diffInMinutes / 1440)}d ago`
+    }
+  }
+
+  return (
+    <div className="space-y-6">
+      <Card className="border-red-200 bg-red-50/50">
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-lg font-semibold text-red-800 flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5" />
+              Active Emergency Alerts
+            </CardTitle>
+            <Badge variant="destructive" className="text-xs">
+              {activeReports.length} Active
+            </Badge>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {activeReports.length === 0 ? (
+            <p className="text-muted-foreground text-center py-8">No active emergencies at this time</p>
+          ) : (
+            <div className="space-y-4">
+              {activeReports.map((report) => (
+                <div
+                  key={report.id}
+                  className="bg-white rounded-lg border border-gray-200 p-4 hover:shadow-md transition-shadow"
+                >
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="flex items-center gap-3">
+                      <Badge className={getPriorityColor(report.priority)}>{report.priority.toUpperCase()}</Badge>
+                      <Badge variant="outline" className={getStatusColor(report.status)}>
+                        {report.status.replace("-", " ").toUpperCase()}
+                      </Badge>
+                      <span className="text-sm font-mono text-muted-foreground">{report.id}</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <Clock className="h-3 w-3" />
+                      {formatTime(report.timestamp)}
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                    <div className="flex items-center gap-2">
+                      <User className="h-4 w-4 text-muted-foreground" />
+                      <div>
+                        <p className="font-medium text-sm">{report.user.name}</p>
+                        <p className="text-xs text-muted-foreground">{report.user.nationality}</p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <MapPin className="h-4 w-4 text-muted-foreground" />
+                      <div>
+                        <p className="text-sm">{report.location.address}</p>
+                        <p className="text-xs text-muted-foreground">{report.location.landmark}</p>
+                      </div>
+                    </div>
+
+                    <div>
+                      <p className="text-sm font-medium capitalize">{report.incident.type} Emergency</p>
+                      <p className="text-xs text-muted-foreground line-clamp-2">{report.incident.description}</p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <div className="text-xs text-muted-foreground">
+                      {report.response.assignedTo ? (
+                        <span>
+                          Assigned to: <strong>{report.response.assignedTo}</strong>
+                        </span>
+                      ) : (
+                        <span className="text-red-600">⚠ Awaiting assignment</span>
+                      )}
+                    </div>
+                    <Button size="sm" variant="outline" className="text-xs bg-transparent">
+                      <Eye className="h-3 w-3 mr-1" />
+                      View Details
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Quick Actions</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <Button className="w-full justify-start bg-transparent" variant="outline">
+              <AlertTriangle className="h-4 w-4 mr-2" />
+              Create Manual Alert
+            </Button>
+            <Button className="w-full justify-start bg-transparent" variant="outline">
+              <MapPin className="h-4 w-4 mr-2" />
+              View Live Map
+            </Button>
+            <Button className="w-full justify-start bg-transparent" variant="outline">
+              <User className="h-4 w-4 mr-2" />
+              Manage Response Units
+            </Button>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">System Status</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-sm">SOS Network</span>
+              <div className="flex items-center gap-2">
+                <div className="h-2 w-2 rounded-full bg-green-500"></div>
+                <span className="text-xs text-green-600">Online</span>
+              </div>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-sm">GPS Tracking</span>
+              <div className="flex items-center gap-2">
+                <div className="h-2 w-2 rounded-full bg-green-500"></div>
+                <span className="text-xs text-green-600">Active</span>
+              </div>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-sm">Response Units</span>
+              <div className="flex items-center gap-2">
+                <div className="h-2 w-2 rounded-full bg-yellow-500"></div>
+                <span className="text-xs text-yellow-600">7/12 Available</span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Today's Summary</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="flex justify-between">
+              <span className="text-sm text-muted-foreground">Total Reports</span>
+              <span className="font-medium">5</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-sm text-muted-foreground">Resolved</span>
+              <span className="font-medium text-green-600">3</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-sm text-muted-foreground">In Progress</span>
+              <span className="font-medium text-blue-600">1</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-sm text-muted-foreground">Pending</span>
+              <span className="font-medium text-red-600">1</span>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  )
+}
