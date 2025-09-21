@@ -1,11 +1,71 @@
+"use client"
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { mockSOSReports } from "@/lib/mock-data"
 import { MapPin, Clock, User, AlertTriangle, Eye } from "lucide-react"
+import { ReportDetailsModal } from "@/components/report-details-modal"
+import { ManualAlertModal } from "@/components/manual-alert-modal"
+import { ResponseUnitManagementModal } from "@/components/response-unit-management-modal"
+import { useState } from "react"
 
 export function DashboardOverview() {
-  // Get active reports (pending and in-progress)
+  const [selectedReport, setSelectedReport] = useState(null)
+  const [isModalOpen, setIsModalOpen] = useState(false)
+  const [isManualAlertOpen, setIsManualAlertOpen] = useState(false)
+  const [isUnitManagementOpen, setIsUnitManagementOpen] = useState(false)
+
+  const [responseUnits, setResponseUnits] = useState([
+    {
+      id: "unit-1",
+      name: "Unit Alpha-7",
+      type: "medical" as const,
+      status: "on-scene" as const,
+      location: "123 Tourist Plaza",
+      assignedTo: "SOS-001",
+      lastUpdate: new Date(Date.now() - 2 * 60 * 1000),
+      contact: "Radio Ch. 7",
+    },
+    {
+      id: "unit-2",
+      name: "Officer Martinez",
+      type: "police" as const,
+      status: "dispatched" as const,
+      location: "En route to Market St",
+      assignedTo: "SOS-002",
+      lastUpdate: new Date(Date.now() - 5 * 60 * 1000),
+      contact: "+1-555-0199",
+    },
+    {
+      id: "unit-3",
+      name: "Tourist Guide Unit",
+      type: "tourist-guide" as const,
+      status: "available" as const,
+      location: "Central Station",
+      lastUpdate: new Date(Date.now() - 10 * 60 * 1000),
+      contact: "+1-555-0177",
+    },
+    {
+      id: "unit-4",
+      name: "Unit Bravo-3",
+      type: "police" as const,
+      status: "available" as const,
+      location: "Harbor Patrol",
+      lastUpdate: new Date(Date.now() - 15 * 60 * 1000),
+      contact: "Radio Ch. 3",
+    },
+    {
+      id: "unit-5",
+      name: "Fire Rescue 12",
+      type: "fire" as const,
+      status: "returning" as const,
+      location: "Returning to Station",
+      lastUpdate: new Date(Date.now() - 8 * 60 * 1000),
+      contact: "Radio Ch. 12",
+    },
+  ])
+
   const activeReports = mockSOSReports.filter(
     (report) => report.status === "pending" || report.status === "in-progress",
   )
@@ -51,6 +111,37 @@ export function DashboardOverview() {
     } else {
       return `${Math.floor(diffInMinutes / 1440)}d ago`
     }
+  }
+
+  const handleViewDetails = (report) => {
+    setSelectedReport(report)
+    setIsModalOpen(true)
+  }
+
+  const handleStatusUpdate = (reportId, status, notes) => {
+    console.log("[v0] Status update:", { reportId, status, notes })
+    setIsModalOpen(false)
+  }
+
+  const handleCreateManualAlert = (alertData) => {
+    console.log("[v0] Manual alert created:", alertData)
+    // In a real app, this would save to database
+  }
+
+  const handleDispatchUnit = (unitId, reportId, instructions) => {
+    console.log("[v0] Dispatching unit:", { unitId, reportId, instructions })
+    setResponseUnits((prev) =>
+      prev.map((unit) =>
+        unit.id === unitId ? { ...unit, status: "dispatched", assignedTo: reportId, lastUpdate: new Date() } : unit,
+      ),
+    )
+  }
+
+  const handleUpdateUnitStatus = (unitId, status, location) => {
+    console.log("[v0] Updating unit status:", { unitId, status, location })
+    setResponseUnits((prev) =>
+      prev.map((unit) => (unit.id === unitId ? { ...unit, status, location, lastUpdate: new Date() } : unit)),
+    )
   }
 
   return (
@@ -124,7 +215,12 @@ export function DashboardOverview() {
                         <span className="text-red-600">⚠ Awaiting assignment</span>
                       )}
                     </div>
-                    <Button size="sm" variant="outline" className="text-xs bg-transparent">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="text-xs bg-transparent"
+                      onClick={() => handleViewDetails(report)}
+                    >
                       <Eye className="h-3 w-3 mr-1" />
                       View Details
                     </Button>
@@ -142,7 +238,11 @@ export function DashboardOverview() {
             <CardTitle className="text-base">Quick Actions</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            <Button className="w-full justify-start bg-transparent" variant="outline">
+            <Button
+              className="w-full justify-start bg-transparent"
+              variant="outline"
+              onClick={() => setIsManualAlertOpen(true)}
+            >
               <AlertTriangle className="h-4 w-4 mr-2" />
               Create Manual Alert
             </Button>
@@ -150,7 +250,11 @@ export function DashboardOverview() {
               <MapPin className="h-4 w-4 mr-2" />
               View Live Map
             </Button>
-            <Button className="w-full justify-start bg-transparent" variant="outline">
+            <Button
+              className="w-full justify-start bg-transparent"
+              variant="outline"
+              onClick={() => setIsUnitManagementOpen(true)}
+            >
               <User className="h-4 w-4 mr-2" />
               Manage Response Units
             </Button>
@@ -210,6 +314,27 @@ export function DashboardOverview() {
           </CardContent>
         </Card>
       </div>
+
+      <ReportDetailsModal
+        report={selectedReport}
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onStatusUpdate={handleStatusUpdate}
+      />
+
+      <ManualAlertModal
+        isOpen={isManualAlertOpen}
+        onClose={() => setIsManualAlertOpen(false)}
+        onCreateAlert={handleCreateManualAlert}
+      />
+
+      <ResponseUnitManagementModal
+        isOpen={isUnitManagementOpen}
+        onClose={() => setIsUnitManagementOpen(false)}
+        units={responseUnits}
+        onDispatchUnit={handleDispatchUnit}
+        onUpdateUnitStatus={handleUpdateUnitStatus}
+      />
     </div>
   )
 }
