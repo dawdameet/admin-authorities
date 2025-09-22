@@ -7,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import type { SOSReport } from "@/lib/mock-data"
 import { MapPin, Clock, User, Phone, Mail, Flag, Camera, AlertTriangle, CheckCircle, XCircle } from "lucide-react"
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import Image from "next/image"
 
 interface ReportDetailsModalProps {
@@ -20,55 +20,6 @@ interface ReportDetailsModalProps {
 export function ReportDetailsModal({ report, isOpen, onClose, onStatusUpdate }: ReportDetailsModalProps) {
   const [newStatus, setNewStatus] = useState("")
   const [newNote, setNewNote] = useState("")
-  const [map, setMap] = useState<any>(null)
-
-  useEffect(() => {
-    if (isOpen && report && typeof window !== "undefined") {
-      const initMap = async () => {
-        const L = (await import("leaflet")).default
-
-        if (map) {
-          map.remove()
-        }
-
-        setTimeout(() => {
-          const mapElement = document.getElementById("report-location-map")
-          if (mapElement) {
-            const newMap = L.map("report-location-map").setView(
-              [report.location.latitude, report.location.longitude],
-              15,
-            )
-
-            L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-              attribution: "© OpenStreetMap contributors",
-            }).addTo(newMap)
-
-            const marker = L.marker([report.location.latitude, report.location.longitude])
-              .addTo(newMap)
-              .bindPopup(`
-                <div class="p-2">
-                  <h3 class="font-semibold">${report.incident.type} Emergency</h3>
-                  <p class="text-sm">${report.location.address}</p>
-                  <p class="text-xs text-gray-600">Priority: ${report.priority}</p>
-                </div>
-              `)
-              .openPopup()
-
-            setMap(newMap)
-          }
-        }, 100)
-      }
-
-      initMap()
-    }
-
-    return () => {
-      if (map) {
-        map.remove()
-        setMap(null)
-      }
-    }
-  }, [isOpen, report])
 
   if (!report) return null
 
@@ -117,7 +68,7 @@ export function ReportDetailsModal({ report, isOpen, onClose, onStatusUpdate }: 
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-3">
             <AlertTriangle className="h-5 w-5 text-red-600" />
@@ -138,7 +89,7 @@ export function ReportDetailsModal({ report, isOpen, onClose, onStatusUpdate }: 
             </div>
           </div>
 
-          {/* Location Information */}
+          {/* User Information */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-4">
               <h3 className="font-semibold text-lg flex items-center gap-2">
@@ -165,64 +116,70 @@ export function ReportDetailsModal({ report, isOpen, onClose, onStatusUpdate }: 
               </div>
             </div>
 
-            {/* Incident Details */}
+            {/* Location Information */}
             <div className="space-y-4">
               <h3 className="font-semibold text-lg flex items-center gap-2">
-                <AlertTriangle className="h-5 w-5" />
-                Incident Information
+                <MapPin className="h-5 w-5" />
+                Location Details
               </h3>
-              <div className="bg-gray-50 p-4 rounded-lg space-y-3">
-                <div>
-                  <span className="font-medium">Type: </span>
-                  <Badge variant="outline" className="capitalize">
-                    {report.incident.type} Emergency
-                  </Badge>
-                </div>
-                <div>
-                  <span className="font-medium">Description:</span>
-                  <p className="mt-1 text-sm">{report.incident.description}</p>
-                </div>
-
-                {/* Photos */}
-                {report.incident.photos.length > 0 && (
+              <div className="space-y-3 bg-gray-50 p-4 rounded-lg">
+                <div className="flex items-start gap-2">
+                  <MapPin className="h-4 w-4 text-muted-foreground mt-0.5" />
                   <div>
-                    <div className="flex items-center gap-2 mb-2">
-                      <Camera className="h-4 w-4" />
-                      <span className="font-medium">Photos ({report.incident.photos.length})</span>
-                    </div>
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                      {report.incident.photos.map((photo, index) => (
-                        <div key={index} className="relative aspect-square bg-gray-200 rounded-lg overflow-hidden">
-                          <Image
-                            src={photo || "/placeholder.svg"}
-                            alt={`Incident photo ${index + 1}`}
-                            fill
-                            className="object-cover"
-                          />
-                        </div>
-                      ))}
-                    </div>
+                    <p className="font-medium">{report.location.address}</p>
+                    {report.location.landmark && (
+                      <p className="text-sm text-muted-foreground">{report.location.landmark}</p>
+                    )}
                   </div>
-                )}
+                </div>
+                <div className="text-sm text-muted-foreground">
+                  <p>
+                    Coordinates: {report.location.latitude}, {report.location.longitude}
+                  </p>
+                </div>
               </div>
             </div>
           </div>
 
-          {/* Incident Location */}
+          {/* Incident Details */}
           <div className="space-y-4">
             <h3 className="font-semibold text-lg flex items-center gap-2">
-              <MapPin className="h-5 w-5" />
-              Incident Location
+              <AlertTriangle className="h-5 w-5" />
+              Incident Information
             </h3>
-            <div className="bg-gray-50 p-4 rounded-lg">
-              <div id="report-location-map" className="h-64 w-full rounded-lg mb-3"></div>
-              <div className="text-sm space-y-1">
-                <p className="font-medium">{report.location.address}</p>
-                {report.location.landmark && <p className="text-muted-foreground">{report.location.landmark}</p>}
-                <p className="text-muted-foreground">
-                  Coordinates: {report.location.latitude}, {report.location.longitude}
-                </p>
+            <div className="bg-gray-50 p-4 rounded-lg space-y-3">
+              <div>
+                <span className="font-medium">Type: </span>
+                <Badge variant="outline" className="capitalize">
+                  {report.incident.type} Emergency
+                </Badge>
               </div>
+              <div>
+                <span className="font-medium">Description:</span>
+                <p className="mt-1 text-sm">{report.incident.description}</p>
+              </div>
+
+              {/* Photos */}
+              {report.incident.photos.length > 0 && (
+                <div>
+                  <div className="flex items-center gap-2 mb-2">
+                    <Camera className="h-4 w-4" />
+                    <span className="font-medium">Photos ({report.incident.photos.length})</span>
+                  </div>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                    {report.incident.photos.map((photo, index) => (
+                      <div key={index} className="relative aspect-square bg-gray-200 rounded-lg overflow-hidden">
+                        <Image
+                          src={photo || "/placeholder.svg"}
+                          alt={`Incident photo ${index + 1}`}
+                          fill
+                          className="object-cover"
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 

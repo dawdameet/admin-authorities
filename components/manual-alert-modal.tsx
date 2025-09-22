@@ -7,99 +7,12 @@ import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Label } from "@/components/ui/label"
 import { AlertTriangle, MapPin, Camera, Plus, X, Target } from "lucide-react"
-import { useState, useEffect } from "react"
+import { useState } from "react"
 
 interface ManualAlertModalProps {
   isOpen: boolean
   onClose: () => void
   onCreateAlert: (alertData: any) => void
-}
-
-function LocationPickerMap({
-  onLocationSelect,
-  selectedLocation,
-}: {
-  onLocationSelect: (lat: number, lng: number) => void
-  selectedLocation: { lat: string; lng: string }
-}) {
-  const [map, setMap] = useState<any>(null)
-  const [marker, setMarker] = useState<any>(null)
-
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      // Dynamically import Leaflet to avoid SSR issues
-      import("leaflet").then((L) => {
-        // Initialize map centered on Mumbai
-        const mapInstance = L.map("location-picker-map").setView([19.076, 72.8777], 11)
-
-        L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-          attribution: "© OpenStreetMap contributors",
-        }).addTo(mapInstance)
-
-        // Add click handler
-        mapInstance.on("click", (e: any) => {
-          const { lat, lng } = e.latlng
-          onLocationSelect(lat, lng)
-
-          // Remove existing marker
-          if (marker) {
-            mapInstance.removeLayer(marker)
-          }
-
-          // Add new marker
-          const newMarker = L.marker([lat, lng]).addTo(mapInstance)
-          setMarker(newMarker)
-        })
-
-        setMap(mapInstance)
-
-        // Set initial marker if coordinates exist
-        if (selectedLocation.lat && selectedLocation.lng) {
-          const lat = Number.parseFloat(selectedLocation.lat)
-          const lng = Number.parseFloat(selectedLocation.lng)
-          if (!isNaN(lat) && !isNaN(lng)) {
-            const initialMarker = L.marker([lat, lng]).addTo(mapInstance)
-            setMarker(initialMarker)
-            mapInstance.setView([lat, lng], 15)
-          }
-        }
-
-        return () => {
-          mapInstance.remove()
-        }
-      })
-    }
-  }, [])
-
-  // Update marker when coordinates change externally
-  useEffect(() => {
-    if (map && selectedLocation.lat && selectedLocation.lng) {
-      const lat = Number.parseFloat(selectedLocation.lat)
-      const lng = Number.parseFloat(selectedLocation.lng)
-      if (!isNaN(lat) && !isNaN(lng)) {
-        if (marker) {
-          map.removeLayer(marker)
-        }
-        const newMarker = (window as any).L.marker([lat, lng]).addTo(map)
-        setMarker(newMarker)
-        map.setView([lat, lng], 15)
-      }
-    }
-  }, [selectedLocation.lat, selectedLocation.lng, map, marker])
-
-  return (
-    <div className="space-y-2">
-      <Label>Click on map to select emergency location</Label>
-      <div
-        id="location-picker-map"
-        className="h-64 w-full rounded-lg border border-gray-300"
-        style={{ minHeight: "256px" }}
-      />
-      <p className="text-xs text-muted-foreground">
-        Click anywhere on the map to set the emergency location coordinates
-      </p>
-    </div>
-  )
 }
 
 export function ManualAlertModal({ isOpen, onClose, onCreateAlert }: ManualAlertModalProps) {
@@ -133,17 +46,6 @@ export function ManualAlertModal({ isOpen, onClose, onCreateAlert }: ManualAlert
         [field]: value,
       }))
     }
-  }
-
-  const handleLocationSelect = (lat: number, lng: number) => {
-    setFormData((prev) => ({
-      ...prev,
-      location: {
-        ...prev.location,
-        latitude: lat.toFixed(6),
-        longitude: lng.toFixed(6),
-      },
-    }))
   }
 
   const getCurrentLocation = () => {
@@ -210,23 +112,9 @@ export function ManualAlertModal({ isOpen, onClose, onCreateAlert }: ManualAlert
     )
   }
 
-  useEffect(() => {
-    if (isOpen && typeof window !== "undefined") {
-      // Load Leaflet CSS
-      const link = document.createElement("link")
-      link.rel = "stylesheet"
-      link.href = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-      document.head.appendChild(link)
-
-      return () => {
-        document.head.removeChild(link)
-      }
-    }
-  }, [isOpen])
-
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-3">
             <AlertTriangle className="h-5 w-5 text-red-600" />
@@ -302,17 +190,12 @@ export function ManualAlertModal({ isOpen, onClose, onCreateAlert }: ManualAlert
               </Button>
             </div>
 
-            <LocationPickerMap
-              onLocationSelect={handleLocationSelect}
-              selectedLocation={{ lat: formData.location.latitude, lng: formData.location.longitude }}
-            />
-
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="latitude">Latitude *</Label>
                 <Input
                   id="latitude"
-                  placeholder="e.g., 19.0760"
+                  placeholder="e.g., 40.7128"
                   value={formData.location.latitude}
                   onChange={(e) => handleInputChange("location", "latitude", e.target.value)}
                   className="font-mono"
@@ -322,7 +205,7 @@ export function ManualAlertModal({ isOpen, onClose, onCreateAlert }: ManualAlert
                 <Label htmlFor="longitude">Longitude *</Label>
                 <Input
                   id="longitude"
-                  placeholder="e.g., 72.8777"
+                  placeholder="e.g., -74.0060"
                   value={formData.location.longitude}
                   onChange={(e) => handleInputChange("location", "longitude", e.target.value)}
                   className="font-mono"
@@ -341,7 +224,7 @@ export function ManualAlertModal({ isOpen, onClose, onCreateAlert }: ManualAlert
                 <Label htmlFor="landmark">Nearby Landmark</Label>
                 <Input
                   id="landmark"
-                  placeholder="e.g., Near Gateway of India"
+                  placeholder="e.g., Near Central Park entrance"
                   value={formData.location.landmark}
                   onChange={(e) => handleInputChange("location", "landmark", e.target.value)}
                 />
